@@ -99,19 +99,6 @@ async function getWeatherDataAndRenderPage(filePath, res) {
   }
 }
 
-// async function queryAsync(sql, params) {
-//   return new Promise(async (resolve, reject) => {
-//     try {
-//       const connection = await db();
-//       let [results] = await connection.query(sql, params);
-//       connection.destroy();
-//       resolve(results);
-//     } catch (error) {
-//       reject(error);
-//     }
-//   });
-// }
-
 // 인증 라우터
 app.use("/auth", authRouter);
 
@@ -165,7 +152,7 @@ app.get("/main/mypage", (req, res) => {
 app.get("/main/mypage/bookmark", async (req, res) => {
   const filePath = path.join(__dirname, "/views/bookmark.html");
   let Routes = {};
-  res.send("수정예정");
+  res.send("aaaaaaaa");
   // try {
   //   Routes = await transport.getPublicTransport(126.9961, 37.5035, 126.96, 37.4946, 202307291200); //신반포역->정보관
   //   if (Routes.length < 1) {
