@@ -3,6 +3,7 @@ package pposonggil.usedStuff.service.Board;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,7 @@ import pposonggil.usedStuff.service.Trade.TradeService;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -77,7 +79,8 @@ public class BoardService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(NoSuchElementException::new);
 
-        LocalTime curTime = LocalTime.now(ZoneId.of("Asia/Seoul"));
+        LocalDateTime curTime = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+        DateTimeFormatter inputFormatter2 = DateTimeFormatter.ofPattern("HHmm");
 
         List<BoardDto> boardDtos = findBoards();
 
@@ -103,7 +106,6 @@ public class BoardService {
                 }
             }
         }
-
         for (BoardDto boardDto : results) {
             TransactionAddress address = boardDto.getAddress();
             PointInformationDto endDto = PointInformationDto.builder()
@@ -112,7 +114,7 @@ public class BoardService {
                     .longitude(address.getLongitude())
                     .build();
             try {
-                PathDto pathDto = pathService.createPath(startDto, endDto, curTime.format(inputFormatter), memberId);
+                PathDto pathDto = pathService.createPath(startDto, endDto, curTime.format(inputFormatter2), memberId);
                 boardDto.setExpectedRain(pathDto.getTotalRain());
             } catch (Exception e) {
                 log.info("Forecast 정보를 가져오는 데 실패했습니다: " + e.getMessage());
@@ -320,23 +322,19 @@ public class BoardService {
          * 로컬 경로에 저장
          */
         public String uploadFileToS3(MultipartFile multipartFile, String filePath) {
-            // MultiPartFile --> File 로 변환
-            File uploadFile = null;
-            try {
-                uploadFile = convert(multipartFile)
-                        .orElseThrow(() -> new IllegalArgumentException("[error] : MultipartFile --> 파일 변환 실패"));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-
-            // S3에 저장된 파일 이름
             String fileName = filePath + "/" + UUID.randomUUID();
+            ObjectMetadata metadata = new ObjectMetadata();
+            metadata.setContentLength(multipartFile.getSize());
 
-            // S3에 업로드 후 로컬 파일 삭제
-            String uploadImageUrl = putS3(uploadFile, fileName);
-            removeNewFile(uploadFile);
-            return uploadImageUrl;
+            try (InputStream inputStream = multipartFile.getInputStream()) {
+                amazonS3Client.putObject(new PutObjectRequest(bucket, fileName, inputStream, metadata)
+                        .withCannedAcl(CannedAccessControlList.PublicRead));
+            } catch (IOException e) {
+                throw new RuntimeException("[error] : 파일 업로드 실패", e);
+            }
+            return amazonS3Client.getUrl(bucket, fileName).toString();
         }
+
 
         /**
          * S3으로 업로드

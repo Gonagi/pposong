@@ -146,7 +146,7 @@ public class SubPathService {
                 }
                 double roundedTime = (totalTime % 60 >= 30) ? ((totalTime / 60) + 1) : (totalTime / 60);
                 subPathDto.setPointDtos(pointDtos);
-                subPathDto.setTime((long) roundedTime);
+                subPathDto.setTime((long) roundedTime / 7 == 0 ? 3 : (long) roundedTime / 7);
                 subPathDto.setDistance((long) totalDistance);
             }
             result.add(subPathDto);
