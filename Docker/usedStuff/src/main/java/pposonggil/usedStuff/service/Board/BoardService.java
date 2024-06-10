@@ -115,7 +115,7 @@ public class BoardService {
                     .build();
             try {
                 PathDto pathDto = pathService.createPath(startDto, endDto, curTime.format(inputFormatter2), memberId);
-                boardDto.setExpectedRain(pathDto.getTotalRain());
+                boardDto.setExpectedRain(Math.round(pathDto.getTotalRain() * 100.0) / 100.0);
             } catch (Exception e) {
                 log.info("Forecast 정보를 가져오는 데 실패했습니다: " + e.getMessage());
             }
