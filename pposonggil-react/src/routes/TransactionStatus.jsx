@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { useRecoilState } from 'recoil';
-import { addressState, currentAddressState, markerState, routeInfoState, userState } from '../recoil/atoms';
+import { useRecoilState, useSetRecoilState } from 'recoil';
+import { addressState, currentAddressState, markerState, navState, routeInfoState, userState } from '../recoil/atoms';
 import axios from "axios";
 
 import styled from "styled-components";
@@ -14,11 +14,11 @@ import MapBtn from "../components/MapBtn";
 const { kakao } = window;
 
 function TransactionStatus() {
+  const setNav = useSetRecoilState(navState);
   const [map, setMap] = useState(null);
   const [infoWindow, setInfoWindow] = useState(null);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const mapRef = useRef(null);
   const mapInstance = useRef(null);
   /*  여기서부터 MapBtn 컴포넌트 관련 */
   const markerInstance = useRef(null);
@@ -197,6 +197,7 @@ function TransactionStatus() {
 
   /* 지도 생성 */
   useEffect(() => {
+    setNav("mypage");
     console.log("전달받은 transaction: ", transaction);
     getGridWeatherFromServer();
     getCurrentAddress();
@@ -211,10 +212,31 @@ function TransactionStatus() {
       geocoder.current = new kakao.maps.services.Geocoder();
       setMap(mapInstance.current);
       /* 거래 장소로 마크업 및 지도 확대 */
+      markTradePlace();
       
       console.log("지도 랜더링");
     });
   }, []);
+
+  // 거래장소로 지도 마크업
+  const markTradePlace = () => {
+     /* 거래 장소로 마크업 및 지도 확대 */
+     console.log("거래정보: ",transaction);
+     const latitude = transaction.address.latitude; 
+     const longitude = transaction.address.longitude;
+     const markerPosition = new kakao.maps.LatLng(latitude, longitude); // Example coordinates
+     const marker = new kakao.maps.Marker({
+       position: markerPosition
+     });
+     marker.setMap(mapInstance.current);
+     // 지도 확대 및 이동
+     mapInstance.current.setCenter(markerPosition);
+     mapInstance.current.setLevel(3); // 1 being the most zoomed-in level, adjust as needed
+  };
+
+  // useEffect(()=> {
+
+  // }, []);
 
   // currentAddress가 처음 설정된 경우에만 함수를 실행 => useRef 사용해서 처음 한 번만 PUT 요청이 자동으로 보내지게 함
   useEffect(() => {
@@ -343,10 +365,8 @@ function TransactionStatus() {
   }, [routeInfo]);
 
   /* 서버로 내 위치 데이터, 아이디 보내고 정보 받기 */
-  // 현재 내위치~거래장소와의 거리 계산 함수 추가하기
-
   const sendDtosToServer = async() => {
-    console.log("서버에 put합니다");
+    console.log("서버에 put");
     //url에 tradeId와 유저의 id 붙여서 보내기 //테스트용으로 일단 거래아이디로 확인해봄
     const url = `http://localhost:8080/api/distance/${transaction.tradeId}/by-member/${user.userId}`; 
     const formData = new FormData(); // form-data 객체 생성
@@ -425,8 +445,8 @@ function TransactionStatus() {
         />
       </MapContainer>
       <SearchRouteBtn
-          initial={{ height: "10%" }}
-          animate={{ height: isExpanded ? "20%" : "10%" }}
+          initial={{ height: "20%" }}
+          animate={{ height: isExpanded ? "20%" : "20%" }}
           transition={{ duration: 0.4 }}
           >
               <RouteBtn onClick={()=>onSearchBtnClick()}>
@@ -435,8 +455,8 @@ function TransactionStatus() {
               </RouteBtn>
       </SearchRouteBtn>
       <BottomContainer
-        initial={{ height: "45%" }}
-        animate={{ height: isExpanded ? "50%" : "45%" }}
+        initial={{ height: "50%" }}
+        animate={{ height: isExpanded ? "50%" : "50%" }}
         transition={{ duration: 0.4 }}
         // onClick={() => setIsExpanded(!isExpanded)}
       >
@@ -556,7 +576,7 @@ export default TransactionStatus;
 
 const MapContainer = styled(motion.div)`
   width: 100%;
-  height: 55%;
+  height: 50%;
   position: relative;
 `;
 
@@ -616,7 +636,7 @@ const TimeBtn = styled.button`
 /* 하단창 */
 const BottomContainer = styled(motion.div)`
   width: 100%;
-  height: 40%;
+  height: 50%;
   background: white;
   position: absolute;
   bottom: 0;
