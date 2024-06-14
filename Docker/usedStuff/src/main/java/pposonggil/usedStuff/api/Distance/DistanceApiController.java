@@ -58,7 +58,7 @@ public class DistanceApiController {
      * @return : 성공 --> 업데이트된 거리 Dto
      */
     @PutMapping("/api/distance/{distanceId}/by-member/{memberId}")
-    public DistanceDto updateSubjectDistance(@PathVariable Long distanceId,
+    public DistanceDto updateDistance(@PathVariable Long distanceId,
                                              @PathVariable Long memberId,
                                              @RequestPart PointInformationDto startDto) {
         DistanceDto distanceDto = distanceService.findOne(distanceId);

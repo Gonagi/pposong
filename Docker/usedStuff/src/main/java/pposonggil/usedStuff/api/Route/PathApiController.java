@@ -85,7 +85,9 @@ public class PathApiController {
      */
     @PostMapping("/api/path/pposong")
     public PathDto selectPposongtPath(@RequestBody PathDto pathDto) throws IOException {
-        return pathService.selectPposongPath(pathDto);
+        PathDto pathDto1 = pathService.selectPposongPath(pathDto);
+        subPathService.updatePposongInfo(pathDto1);
+        return pathDto1;
     }
 
     /**
