@@ -217,6 +217,7 @@ public class PathService {
      */
     public PathDto selectDefaultPath(PathDto pathDto) throws IOException {
         List<SubPathDto> walkSubPaths = subPathService.createDefaultSubPaths(pathDto);
+        updateTotalTime(pathDto, walkSubPaths);
         pathDto.setSubPathDtos(walkSubPaths);
         return pathDto;
     }
@@ -228,12 +229,12 @@ public class PathService {
      */
     public PathDto selectPposongPath(PathDto pathDto) throws IOException {
         List<SubPathDto> walkSubPaths = subPathService.createPposongSubPaths(pathDto);
-        updatePposongTotalTime(pathDto, walkSubPaths);
+        updateTotalTime(pathDto, walkSubPaths);
         pathDto.setSubPathDtos(walkSubPaths);
         return pathDto;
     }
 
-    private static void updatePposongTotalTime(PathDto pathDto, List<SubPathDto> walkSubPaths) {
+    private static void updateTotalTime(PathDto pathDto, List<SubPathDto> walkSubPaths) {
         long totalTime = 0L;
         for (SubPathDto subPathDto : walkSubPaths) {
             totalTime = totalTime + subPathDto.getTime();

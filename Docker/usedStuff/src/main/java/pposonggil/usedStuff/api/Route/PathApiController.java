@@ -73,7 +73,9 @@ public class PathApiController {
      */
     @PostMapping("/api/path/default")
     public PathDto selectDefaultPath(@RequestBody PathDto pathDto) throws IOException {
-        return pathService.selectDefaultPath(pathDto);
+        PathDto pathDto1 = pathService.selectDefaultPath(pathDto);
+        subPathService.updateWalkInfo(pathDto1);
+        return pathDto1;
     }
 
     /**
@@ -86,7 +88,7 @@ public class PathApiController {
     @PostMapping("/api/path/pposong")
     public PathDto selectPposongtPath(@RequestBody PathDto pathDto) throws IOException {
         PathDto pathDto1 = pathService.selectPposongPath(pathDto);
-        subPathService.updatePposongInfo(pathDto1);
+        subPathService.updateWalkInfo(pathDto1);
         return pathDto1;
     }
 

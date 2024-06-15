@@ -58,7 +58,6 @@ public class SubPathService {
                 JsonNode routesNode = jsonNode.path("routes").get(0);
 
                 double totalDistance = routesNode.path("distance").asDouble();
-                double totalTime = routesNode.path("duration").asDouble();
                 JsonNode legsNode = routesNode.path("legs").get(0);
                 JsonNode stepsNode = legsNode.path("steps");
 
@@ -85,9 +84,8 @@ public class SubPathService {
                         pointDtos.add(pointDto);
                     }
                 }
-                long roundedTime = (long) ((totalTime % 60 >= 30) ? ((totalTime / 60) + 1) : (totalTime / 60));
                 subPathDto.setPointDtos(pointDtos);
-                subPathDto.setTime(roundedTime);
+                subPathDto.setTime((long) (totalDistance / 60));
                 subPathDto.setDistance((long) totalDistance);
             }
             result.add(subPathDto);
@@ -115,9 +113,7 @@ public class SubPathService {
                 JsonNode jsonNode = objectMapper.readTree(sb.toString());
 
                 JsonNode routesNode = jsonNode.path("routes").get(0);
-
                 double totalDistance = routesNode.path("distance").asDouble();
-                double totalTime = routesNode.path("duration").asDouble();
                 JsonNode legsNode = routesNode.path("legs").get(0);
                 JsonNode stepsNode = legsNode.path("steps");
 
@@ -144,15 +140,29 @@ public class SubPathService {
                         pointDtos.add(pointDto);
                     }
                 }
-                double roundedTime = (totalTime % 60 >= 30) ? ((totalTime / 60) + 1) : (totalTime / 60);
                 subPathDto.setPointDtos(pointDtos);
-                subPathDto.setTime((long) roundedTime / 7 == 0 ? 3 : (long) roundedTime / 7);
+                subPathDto.setTime((long) (totalDistance / 60));
                 subPathDto.setDistance((long) totalDistance);
             }
             result.add(subPathDto);
         }
         return result;
     }
+
+    public void updateWalkInfo(PathDto pathDto1) {
+        Long totalWalkDistance = 0L;
+        Long totalWalkTime = 0L;
+
+        for (SubPathDto subPathDto : pathDto1.getSubPathDtos()) {
+            if (Objects.equals(subPathDto.getType(), "walk")) {
+                totalWalkDistance = totalWalkDistance + subPathDto.getDistance();
+                totalWalkTime = totalWalkTime + subPathDto.getTime();
+            }
+        }
+        pathDto1.setTotalWalkDistance(totalWalkDistance);
+        pathDto1.setTotalWalkTime(totalWalkTime);
+    }
+
 
     /**
      * 날씨 정보를 포함한 도보 경로
@@ -191,20 +201,45 @@ public class SubPathService {
 
     private static StringBuilder getResponse(String urlInfo) throws IOException {
         URL url = new URL(urlInfo);
-
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("GET");
-        conn.setRequestProperty("Content-type", "application/json");
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-
+        HttpURLConnection conn = null;
+        BufferedReader bufferedReader = null;
         StringBuilder sb = new StringBuilder();
-        String line;
-        while ((line = bufferedReader.readLine()) != null) {
-            sb.append(line);
-        }
 
-        bufferedReader.close();
-        conn.disconnect();
+        try {
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("Content-type", "application/json");
+
+            // 서버 응답 코드 확인
+            int responseCode = conn.getResponseCode();
+            if (responseCode != HttpURLConnection.HTTP_OK) {
+                throw new IOException("Server returned HTTP response code: " + responseCode + " for URL: " + urlInfo);
+            }
+
+            // 응답 스트림 읽기
+            bufferedReader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                sb.append(line);
+            }
+        } catch (IOException e) {
+            // 오류 로그 출력
+            System.err.println("Error during HTTP request: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        } finally {
+            // 리소스 해제
+            if (bufferedReader != null) {
+                try {
+                    bufferedReader.close();
+                } catch (IOException e) {
+                    System.err.println("Error closing BufferedReader: " + e.getMessage());
+                }
+            }
+            if (conn != null) {
+                conn.disconnect();
+            }
+        }
 
         return sb;
     }
