@@ -16,7 +16,7 @@ function setup()
       call_tagless_node_function    = false,
       traffic_light_penalty         = 2,
       u_turn_penalty                = 2,
-      rain_penalty                  = 500,
+      rain_penalty                  = 60,
       continue_straight_at_waypoint = false,
       use_turn_restrictions         = false,
     },
@@ -85,12 +85,12 @@ function setup()
 
     speeds = Sequence {
       highway = {
-        primary         = walking_speed,
-        primary_link    = walking_speed,
-        secondary       = walking_speed,
-        secondary_link  = walking_speed,
-        tertiary        = walking_speed,
-        tertiary_link   = walking_speed,
+        primary         = walking_speed * 1.1,
+        primary_link    = walking_speed * 1.1,
+        secondary       = walking_speed * 1.1,
+        secondary_link  = walking_speed * 1.1,
+        tertiary        = walking_speed * 1.1,
+        tertiary_link   = walking_speed * 1.1,
         unclassified    = walking_speed,
         residential     = walking_speed,
         road            = walking_speed,
@@ -101,7 +101,7 @@ function setup()
         steps           = walking_speed,
         pedestrian      = walking_speed,
         footway         = walking_speed,
-        pier            = walking_speed
+        pier            = walking_speed,
       },
 
       railway = {
@@ -111,7 +111,7 @@ function setup()
       amenity = {
         parking         = walking_speed,
         parking_entrance= walking_speed,
-        covered         = walking_speed * 1.2
+        covered         = walking_speed,
       },
 
       man_made = {
@@ -124,18 +124,18 @@ function setup()
 
       -- 터널 속성 가진 길의 속도 증가
       tunnel = {
-        yes             = walking_speed * 1.2,
-        covered         = walking_speed * 1.2,
-        building_passage= walking_speed * 1.2
+        yes             = walking_speed,
+        covered         = walking_speed,
+        building_passage= walking_speed,
       },
 
       -- covered 속성 가진 길의 속도 증가
       covered = {
-        yes             = walking_speed * 1.2,
-        booth           = walking_speed * 1.2,
-        arcade          = walking_speed * 1.2,
-        building_passage= walking_speed * 1.2,
-        roof            = walking_speed * 1.2,
+        yes             = walking_speed,
+        booth           = walking_speed,
+        arcade          = walking_speed,
+        building_passage= walking_speed,
+        roof            = walking_speed,
       }
     },
 
@@ -267,32 +267,39 @@ function process_way(profile, way, result)
     WayHandlers.weights
   }
 
+  WayHandlers.run(profile, way, result, data, handlers)
+
   local other_tags = way:get_value_by_key("other_tags")
   local check = 0
 
   if other_tags then
     local tags = parse_other_tags(other_tags)  
-     -- 사람이 지나갈 수 있는 터널 
+
+    -- 사람이 지나갈 수 있는 터널 
+    -- 어드밴티지 부여
     if tags["tunnel"] and not profile.tunnel_blacklist[tags["tunnel"]] then
       check = check + 1
+      result.duration = result.duration - profile.properties.rain_penalty
+      result.forward_speed = result.forward_speed * 12.0
+      result.backward_speed = result.backward_speed * 12.0
     end
 
     -- 객체가 무언가로 덮여 있는지 나타내는 tag
     -- 부스, 아치형 지붕, 가로수, 지붕있는 통행로, 지붕, ...
+    -- 어드밴티지 부여
     if tags["covered"] == "yes" then
       check = check + 1
+      result.duration = result.duration - profile.properties.rain_penalty
+      result.forward_speed = result.forward_speed * 10.0
+      result.backward_speed = result.backward_speed * 10.0
     end
   end
 
-  -- 해당 태그(tunnel, covered)가 없는 길의 가중치 증가
-  -- 소요시간 증가, 속도 감소
+  -- 해당 태그(tunnel, covered)가 없는 길의 속도 감소
   if check == 0 then
-    result.duration = result.duration + profile.properties.rain_penalty
-    result.forward_speed = result.forward_speed * 0.6
-    result.backward_speed = result.backward_speed * 0.6
+    result.forward_speed = result.forward_speed * 0.1
+    result.backward_speed = result.backward_speed * 0.1
   end
-
-  WayHandlers.run(profile, way, result, data, handlers)
 end
 
 function process_turn (profile, turn)

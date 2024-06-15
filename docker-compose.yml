@@ -1,8 +1,9 @@
 version: "3.2"
 services:
   nginx:
-    image: gonaging/nginx:1.25
+    image: nginx:latest
     container_name: nginx
+    build: ./Docker/nginx
     ports:
       - 80:80
       - 443:443
@@ -24,7 +25,7 @@ services:
     depends_on:
       - server
       - api_gateway
-      - usedStuff
+      - usedstuff
       - pposonggil-react
       - mysql
 
@@ -97,7 +98,7 @@ services:
         source: ./pposonggil-react
         target: /usr/src/app/pposonggil-react
 
-  usedStuff:
+  usedstuff:
     image: gonaging/usedstuff:1.0
     build:
       context: ./Docker/usedStuff
@@ -176,7 +177,9 @@ services:
         source: ./Docker/osrm/data
         target: /data
     depends_on:
-      - osrm-extract
+      osrm-extract:
+        condition: service_completed_successfully
+
     networks:
       - osrm-network
 
@@ -190,7 +193,8 @@ services:
         source: ./Docker/osrm/data
         target: /data
     depends_on:
-      - osrm-partition
+      osrm-partition:
+        condition: service_completed_successfully
     networks:
       - osrm-network
 
@@ -198,15 +202,18 @@ services:
     image: osrm/osrm-backend
     container_name: osrm-routed
     command: osrm-routed --algorithm mld /data/seoul.osm
-    ports:
-      - "5000:5000"
+    expose:
+      - 5000
+    # ports:
+      # - "5000:5000"
     volumes:
       #- "${PWD}/Docker/osrm/data:/data"
       - type: bind
         source: ./Docker/osrm/data
         target: /data
     depends_on:
-      - osrm-customize
+      osrm-customize:
+        condition: service_completed_successfully
     networks:
       - osrm-network
 
